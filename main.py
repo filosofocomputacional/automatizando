@@ -16,7 +16,7 @@ CIDADES = {
 
 # Lê a cidade informada ou usa 'São Paulo' como padrão
 NOME_CIDADE = os.environ.get("CIDADE_ESCOLHIDA", "São Paulo")
-FUSO_HORARIO = CIDADES.get(NOME_CIDADE, "America/Sao_Paulo")
+FUSO_HORARIO = CIDADES.get(NOME_CIDADE)
 
 # Captura a hora exata no fuso horário da cidade
 agora = datetime.now(ZoneInfo(FUSO_HORARIO))
