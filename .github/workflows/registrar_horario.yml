@@ -1,19 +1,15 @@
-name: Registrar Horário da Cidade
+name: Executar Automação Carômetro
 
 on:
+  # Permite o disparo via API pelo cron-job.org e botão manual no GitHub
   workflow_dispatch:
-    inputs:
-      cidade:
-        description: 'Nome da Cidade (ex: São Paulo, Nova York, Buenos Aires)'
-        required: true
-        default: 'São Paulo'
 
+  # Agendamento nativo como backup (opcional)
   schedule:
-    # Executa a cada 5 minutos
     - cron: '*/5 * * * *'
 
 jobs:
-  registrar:
+  executar:
     runs-on: ubuntu-latest
 
     permissions:
@@ -23,21 +19,29 @@ jobs:
       - name: Baixar código do repositório
         uses: actions/checkout@v4
 
-      - name: Configurar Python
+      - name: Configurar Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Executar registro de horário
-        env:
-          CIDADE_ESCOLHIDA: ${{ inputs.cidade || 'São Paulo' }}
+      - name: Instalar Google Chrome no servidor
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Instalar Dependências do Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Executar Automação Selenium
         run: python main.py
 
-      - name: Salvar atualização no repositório
+      - name: Salvar atualização dos Logs no Repositório
         if: always()
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
-          git add registro_horarios.txt
-          git commit -m "Atualizando horário registrado [skip ci]" || exit 0
+          git add *.txt
+          git commit -m "Atualizando registros de acesso [skip ci]" || exit 0
           git push
