@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 LOG_FILE = "log_acesso_carometro.txt"
+ARQUIVO_SUCESSO = "acessos_sucesso.txt"
 URL_SITE = "https://filosofocomputacional.github.io/site/carometro"
 SENHA_ACESSO = "8737"
 
@@ -20,10 +21,18 @@ def registrar_log(mensagem):
     with open(LOG_FILE, "a", encoding="utf-8") as file:
         file.write(linha_log)
 
+def registrar_sucesso(etapa, turma):
+    """Registra apenas execuções que foram concluídas com sucesso"""
+    data_hora = datetime.now().strftime("%d/%m/%Y às %H:%M:%S")
+    linha = f"[{data_hora}] Acesso bem-sucedido | Etapa: '{etapa}' | Turma: '{turma}'\n"
+    
+    with open(ARQUIVO_SUCESSO, "a", encoding="utf-8") as file:
+        file.write(linha)
+    print(f"[OK] Sucesso registrado em {ARQUIVO_SUCESSO}")
+
 def executar_rotina():
     registrar_log("Iniciando execução da rotina...")
     
-    # Configurações para rodar no servidor sem tela do GitHub
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--no-sandbox')
@@ -40,15 +49,13 @@ def executar_rotina():
         campo_senha.clear()
         campo_senha.send_keys(SENHA_ACESSO)
         
-        # Clica no botão situado logo abaixo do input de senha
         botao_login = driver.find_element(By.XPATH, "//input[@id='login-password']/following::button[1]")
         botao_login.click()
         
-        # 2. Selecionar Etapa de Ensino (aleatória)
+        # 2. Selecionar Etapa
         elem_etapa = wait.until(EC.presence_of_element_locator((By.ID, "select-etapa")))
         select_etapa = Select(elem_etapa)
         
-        # Filtra apenas opções válidas (excluindo marcadores de posição/placeholders)
         opcoes_etapa = [opt for opt in select_etapa.options if opt.get_attribute("value") and opt.get_attribute("value").strip() != ""]
         if not opcoes_etapa:
             raise Exception("Nenhuma etapa disponível para seleção.")
@@ -57,10 +64,9 @@ def executar_rotina():
         nome_etapa = etapa_escolhida.text.strip()
         select_etapa.select_by_value(etapa_escolhida.get_attribute("value"))
         
-        # Aguarda pequeno intervalo para carregamento das turmas vinculadas à etapa
         time.sleep(1)
         
-        # 3. Selecionar Turma (aleatória)
+        # 3. Selecionar Turma
         elem_turmas = wait.until(EC.presence_of_element_locator((By.ID, "select-turmas")))
         select_turmas = Select(elem_turmas)
         
@@ -72,8 +78,9 @@ def executar_rotina():
         nome_turma = turma_escolhida.text.strip()
         select_turmas.select_by_value(turma_escolhida.get_attribute("value"))
         
-        # Registro de sucesso no arquivo de log
+        # Registra o log geral e o arquivo exclusivo de sucessos
         registrar_log(f"CONSOLIDADO COM SUCESSO | Etapa: '{nome_etapa}' | Turma: '{nome_turma}'")
+        registrar_sucesso(nome_etapa, nome_turma)
 
     except Exception as e:
         registrar_log(f"ERRO NA EXECUÇÃO: {str(e)}")
@@ -82,5 +89,4 @@ def executar_rotina():
         driver.quit()
 
 if __name__ == "__main__":
-    # Executa a rotina uma única vez quando chamado pelo GitHub Actions
     executar_rotina()
